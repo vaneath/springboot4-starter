@@ -1,4 +1,4 @@
-package com.valome.starter.services;
+package com.valome.starter.service.auth;
 
 import com.valome.starter.config.JwtProperties;
 import io.jsonwebtoken.*;
