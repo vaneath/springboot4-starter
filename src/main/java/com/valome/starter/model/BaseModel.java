@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 @Slf4j
 public abstract class BaseModel {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false)
     protected Long id;
 

@@ -2,8 +2,11 @@ package com.valome.starter.service.auth;
 
 import com.valome.starter.config.JwtProperties;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +14,7 @@ import java.util.Date;
 import java.security.Key;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class JwtService {
     private final JwtProperties jwtProperties;
@@ -45,7 +49,7 @@ public class JwtService {
 
     // ------------------ PRIVATE METHODS ------------------
     private String generateToken(String username, String secret, long expirationMillis) {
-        Key key = Keys.hmacShaKeyFor(secret.getBytes());
+        Key key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
@@ -63,8 +67,10 @@ public class JwtService {
     }
 
     private String extractUsername(String token, String secret) {
+        log.debug("Secret: " + secret); // Should be a long base64 string
+        log.debug("Token: " + token); // Should have 2 periods
         return Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
+                .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)))
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
@@ -73,7 +79,7 @@ public class JwtService {
 
     private boolean isTokenExpired(String token, String secret) {
         Date expiration = Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
+                .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)))
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
