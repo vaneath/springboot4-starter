@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import com.valome.starter.dto.auth.AuthenticatedResponse;
+import com.valome.starter.dto.auth.LoginResponse;
 import com.valome.starter.dto.auth.AuthRequest;
 import com.valome.starter.dto.auth.RegisterRequest;
 import com.valome.starter.dto.auth.RegisterResponse;
@@ -24,7 +24,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
 
     @Override
-    public AuthenticatedResponse login(AuthRequest request) {
+    public LoginResponse login(AuthRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userService.findByUsername(userDetails.getUsername());
 
-        AuthenticatedResponse response = new AuthenticatedResponse();
+        LoginResponse response = new LoginResponse();
         response.setAccessToken(accessToken);
         response.setRefreshToken(refreshToken);
         response.setUser(user);
