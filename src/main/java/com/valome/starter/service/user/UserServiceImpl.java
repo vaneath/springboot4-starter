@@ -1,5 +1,8 @@
 package com.valome.starter.service.user;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,5 +37,30 @@ public class UserServiceImpl implements UserService {
 
         // Save and return user
         return jpaRepository.save(user);
+    }
+
+    @Override
+    public User getProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new IllegalStateException("User not authenticated");
+        }
+
+        String username;
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            username = ((UserDetails) authentication.getPrincipal()).getUsername();
+        } else if (authentication.getPrincipal() instanceof String) {
+            username = (String) authentication.getPrincipal();
+        } else {
+            throw new IllegalStateException("Invalid authentication principal");
+        }
+
+        User user = findByUsername(username);
+        if (user == null) {
+            throw new IllegalStateException("User not found");
+        }
+
+        return user;
     }
 }

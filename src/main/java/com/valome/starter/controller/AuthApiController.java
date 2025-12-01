@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/v1/auth")
 @Slf4j
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthApiController {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
@@ -44,9 +44,6 @@ public class AuthController {
             JwtResponse response = new JwtResponse();
             response.setAccessToken(accessToken);
             response.setRefreshToken(refreshToken);
-
-            log.debug("Access token: " + accessToken); // Should have 2 periods
-            log.debug("Refresh token: " + refreshToken); // Should have 2 periods
 
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (Exception e) {
