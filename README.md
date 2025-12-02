@@ -7,6 +7,7 @@ A production-ready Spring Boot starter template with JWT authentication, CRUD ge
 ## 📚 Documentation
 
 - **[Quick Start Guide](QUICK_START.md)** - Get up and running in minutes
+- **[CRUD Generator Guide](CRUD_GENERATOR.md)** - Generate CRUD components automatically
 - **[Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)** - Customize the template for your project
 - **[README.md](README.md)** - This file (overview and reference)
 
@@ -33,12 +34,7 @@ A production-ready Spring Boot starter template with JWT authentication, CRUD ge
 
 ### Development Tools
 
-- [CRUD Generator](#crud-generator)
-  - [Usage](#usage)
-  - [Examples](#examples)
-  - [Field Format](#field-format)
-  - [Generated Files](#generated-files)
-  - [After Generation](#after-generation)
+- [CRUD Generator](#crud-generator) - See [CRUD Generator Guide](CRUD_GENERATOR.md) for details
 
 ### Configuration
 
@@ -211,107 +207,13 @@ Entities are never physically deleted. Instead, they are soft-deleted by:
 
 The project includes a powerful CRUD generator script that automatically creates all necessary components for a new entity.
 
-### Usage
+**Quick example:**
 
 ```bash
-./generate-crud.sh EntityName [fields]
+./generate-crud.sh Product "name:String:@NotBlank,price:BigDecimal:@NotNull"
 ```
 
-### Examples
-
-**Basic entity (no fields):**
-
-```bash
-./generate-crud.sh Product
-```
-
-**Entity with fields:**
-
-```bash
-./generate-crud.sh Product "name:String:@NotBlank,price:BigDecimal:@NotNull,description:String"
-```
-
-**Complex entity:**
-
-```bash
-./generate-crud.sh Order "orderNumber:String:@NotBlank,totalAmount:BigDecimal:@NotNull,orderDate:LocalDateTime,status:String:@NotBlank"
-```
-
-### Field Format
-
-```
-name:Type:@Annotation1;@Annotation2
-```
-
-**Supported Types:**
-
-- `String`
-- `Integer`
-- `Long`
-- `BigDecimal`
-- `LocalDate`
-- `LocalDateTime`
-- `Boolean`
-
-**Common Annotations:**
-
-- `@NotBlank` - String cannot be blank
-- `@NotNull` - Field cannot be null
-- `@Email` - Must be valid email format
-- `@Size(max=100)` - String size constraint
-- `@Past` - Date must be in the past
-- `@Pattern(regexp="...")` - Custom regex pattern
-- `@Min(0)` - Minimum value for numbers
-- `@Max(100)` - Maximum value for numbers
-
-**Multiple annotations:** Separate with semicolon (`;`)
-
-Example:
-
-```bash
-./generate-crud.sh User "email:String:@NotBlank;@Email,age:Integer:@NotNull;@Min(18);@Max(120)"
-```
-
-### Generated Files
-
-The generator creates the following files:
-
-```
-src/main/java/com/valome/starter/
-├── model/
-│   └── {EntityName}.java                    # JPA Entity
-├── repository/jpa/
-│   └── {EntityName}Repository.java          # JPA Repository
-├── service/{entity-lower}/
-│   ├── {EntityName}Service.java             # Service Interface
-│   └── {EntityName}ServiceImpl.java         # Service Implementation
-├── mapper/
-│   └── {EntityName}Mapper.java              # MapStruct Mapper
-├── controller/
-│   └── {EntityName}ApiController.java       # REST Controller
-└── dto/{entity-lower}/
-    ├── {EntityName}CreateRequest.java        # Create DTO
-    ├── {EntityName}UpdateRequest.java        # Update DTO
-    └── {EntityName}Response.java             # Response DTO
-```
-
-### After Generation
-
-1. **Review generated files** - Customize as needed
-2. **Compile the project:**
-   ```bash
-   ./gradlew compileJava
-   ```
-3. **Test endpoints** - The controller will be available at:
-   ```
-   POST   /api/v1/{route-base}/search   - Search with pagination
-   POST   /api/v1/{route-base}          - Create
-   GET    /api/v1/{route-base}/{id}     - Get by ID
-   PUT    /api/v1/{route-base}/{id}     - Update
-   DELETE /api/v1/{route-base}/{id}     - Delete (soft delete)
-   ```
-
-**Note:** `{route-base}` is the pluralized, kebab-case version of your entity name (e.g., `Product` → `products`, `Order` → `orders`).
+For complete documentation, examples, and best practices, see the **[CRUD Generator Guide](CRUD_GENERATOR.md)**.
 
 ## Configuration
 
@@ -584,7 +486,7 @@ java -jar build/libs/starter-0.0.1-SNAPSHOT.jar
 
 <div align="center">
 
-**[⬆ Back to Top](#spring-boot-starter-project)** | **[Quick Start Guide](QUICK_START.md)** | **[Customization Guide](TEMPLATE_CUSTOMIZATION.md)**
+**[⬆ Back to Top](#spring-boot-starter-project)** | **[Quick Start](QUICK_START.md)** | **[CRUD Generator](CRUD_GENERATOR.md)** | **[Customization](TEMPLATE_CUSTOMIZATION.md)**
 
 **Happy Coding! 🚀**
 
