@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 
 @Data
 @Builder
@@ -12,5 +13,9 @@ import lombok.Builder;
 public class SuccessResponse<T> {
     private T data;
     private String message;
-    private int status;
+    private int statusCode;
+    private String status;
+
+    @Default
+    private boolean success = true;
 }

@@ -15,7 +15,8 @@ public class ResponseHandler {
         SuccessResponse<T> response = SuccessResponse.<T>builder()
                 .message(message)
                 .data(data)
-                .status(HttpStatus.OK.value())
+                .statusCode(HttpStatus.OK.value())
+                .status(HttpStatus.OK.getReasonPhrase())
                 .build();
 
         return ResponseEntity.ok(response);
@@ -25,8 +26,8 @@ public class ResponseHandler {
     public static ResponseEntity<SuccessResponse<Object>> success(String message) {
         SuccessResponse<Object> response = SuccessResponse.builder()
                 .message(message)
-                .data(null)
-                .status(HttpStatus.OK.value())
+                .statusCode(HttpStatus.NO_CONTENT.value())
+                .status(HttpStatus.NO_CONTENT.getReasonPhrase())
                 .build();
 
         return ResponseEntity.ok(response);
@@ -36,7 +37,8 @@ public class ResponseHandler {
     public static ResponseEntity<ErrorResponse> error(String errorMessage, HttpStatus status) {
         ErrorResponse response = ErrorResponse.builder()
                 .errors(List.of(errorMessage))
-                .status(status.value())
+                .statusCode(status.value())
+                .status(status.getReasonPhrase())
                 .build();
 
         return ResponseEntity.status(status).body(response);
@@ -46,7 +48,8 @@ public class ResponseHandler {
     public static ResponseEntity<ErrorResponse> error(List<String> errors, HttpStatus status) {
         ErrorResponse response = ErrorResponse.builder()
                 .errors(errors)
-                .status(status.value())
+                .statusCode(status.value())
+                .status(status.getReasonPhrase())
                 .build();
 
         return ResponseEntity.status(status).body(response);
