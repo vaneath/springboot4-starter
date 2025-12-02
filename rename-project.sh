@@ -154,27 +154,47 @@ for prop_file in src/main/resources/application*.properties; do
     fi
 done
 
-# Step 6: Rename package directories
+# Step 6: Rename package directories (main and test)
 print_info "Renaming package directories..."
-OLD_DIR="src/main/java/${OLD_PACKAGE_PATH}"
-NEW_DIR="src/main/java/${NEW_PACKAGE_PATH}"
 
-if [ -d "$OLD_DIR" ]; then
+# Rename main source directories
+OLD_MAIN_DIR="src/main/java/${OLD_PACKAGE_PATH}"
+NEW_MAIN_DIR="src/main/java/${NEW_PACKAGE_PATH}"
+
+if [ -d "$OLD_MAIN_DIR" ]; then
     # Create new directory structure
-    mkdir -p "$(dirname "$NEW_DIR")"
+    mkdir -p "$(dirname "$NEW_MAIN_DIR")"
     
     # Move directory
-    mv "$OLD_DIR" "$NEW_DIR"
-    print_info "Moved package directory: $OLD_DIR -> $NEW_DIR"
+    mv "$OLD_MAIN_DIR" "$NEW_MAIN_DIR"
+    print_info "Moved main package directory: $OLD_MAIN_DIR -> $NEW_MAIN_DIR"
     
     # Clean up empty directories
     find src/main/java -type d -empty -delete 2>/dev/null || true
 else
-    print_warn "Package directory not found: $OLD_DIR"
+    print_warn "Main package directory not found: $OLD_MAIN_DIR"
+fi
+
+# Rename test source directories
+OLD_TEST_DIR="src/test/java/${OLD_PACKAGE_PATH}"
+NEW_TEST_DIR="src/test/java/${NEW_PACKAGE_PATH}"
+
+if [ -d "$OLD_TEST_DIR" ]; then
+    # Create new directory structure
+    mkdir -p "$(dirname "$NEW_TEST_DIR")"
+    
+    # Move directory
+    mv "$OLD_TEST_DIR" "$NEW_TEST_DIR"
+    print_info "Moved test package directory: $OLD_TEST_DIR -> $NEW_TEST_DIR"
+    
+    # Clean up empty directories
+    find src/test/java -type d -empty -delete 2>/dev/null || true
+else
+    print_warn "Test package directory not found: $OLD_TEST_DIR (this is OK if no tests exist)"
 fi
 
 # Step 7: Update all Java files (package declarations and imports)
-print_info "Updating Java files..."
+print_info "Updating Java files (main and test)..."
 find src -name "*.java" -type f | while read -r file; do
     # Update package declarations
     sed -i.bak "s|^package ${OLD_PACKAGE}|package ${NEW_PACKAGE}|g" "$file"
@@ -188,7 +208,18 @@ find src -name "*.java" -type f | while read -r file; do
     rm -f "${file}.bak"
 done
 
-# Step 8: Rename main application class
+# Update application class references separately to avoid over-replacement
+print_info "Updating application class references in Java files..."
+find src -name "*.java" -type f | while read -r file; do
+    # Update class references (e.g., StarterApplication.class)
+    sed -i.bak "s|${OLD_APP_CLASS}\\.class|${NEW_APP_CLASS}.class|g" "$file"
+    # Update class name references (but be careful not to replace partial matches)
+    sed -i.bak "s|\\b${OLD_APP_CLASS}\\b|${NEW_APP_CLASS}|g" "$file"
+    
+    rm -f "${file}.bak"
+done
+
+# Step 8: Rename main application class (and test class if exists)
 print_info "Renaming main application class..."
 OLD_APP_FILE="src/main/java/${NEW_PACKAGE_PATH}/${OLD_APP_CLASS}.java"
 NEW_APP_FILE="src/main/java/${NEW_PACKAGE_PATH}/${NEW_APP_CLASS}.java"
@@ -200,6 +231,19 @@ if [ -f "$OLD_APP_FILE" ]; then
     sed -i.bak "s|${OLD_APP_CLASS}\\.class|${NEW_APP_CLASS}.class|g" "$NEW_APP_FILE"
     rm -f "${NEW_APP_FILE}.bak"
     print_info "Renamed application class: $OLD_APP_CLASS -> $NEW_APP_CLASS"
+fi
+
+# Rename test class if it exists
+OLD_TEST_FILE="src/test/java/${NEW_PACKAGE_PATH}/${OLD_APP_CLASS}Tests.java"
+NEW_TEST_FILE="src/test/java/${NEW_PACKAGE_PATH}/${NEW_APP_CLASS}Tests.java"
+
+if [ -f "$OLD_TEST_FILE" ]; then
+    mv "$OLD_TEST_FILE" "$NEW_TEST_FILE"
+    # Update class name inside the test file
+    sed -i.bak "s|class ${OLD_APP_CLASS}Tests|class ${NEW_APP_CLASS}Tests|g" "$NEW_TEST_FILE"
+    sed -i.bak "s|${OLD_APP_CLASS}\\.class|${NEW_APP_CLASS}.class|g" "$NEW_TEST_FILE"
+    rm -f "${NEW_TEST_FILE}.bak"
+    print_info "Renamed test class: ${OLD_APP_CLASS}Tests -> ${NEW_APP_CLASS}Tests"
 fi
 
 # Step 9: Update generate-crud.py
