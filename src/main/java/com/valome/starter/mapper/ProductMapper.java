@@ -16,9 +16,7 @@ import java.util.List;
  * Handles mapping between Product entities and DTOs with proper null handling
  * and custom mapping logic.
  */
-@Mapper(componentModel = "spring", 
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, 
-        unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ProductMapper {
 
     /**
@@ -34,6 +32,8 @@ public interface ProductMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "active", source = "active")
     Product toEntity(ProductCreateRequest request);
 
     /**
@@ -42,7 +42,11 @@ public interface ProductMapper {
      * @param product the Product entity
      * @return ProductResponse DTO
      */
+    @Mapping(target = "id", source = "id", qualifiedByName = "longToString")
+    @Mapping(target = "createdBy", source = "createdBy", qualifiedByName = "longToString")
+    @Mapping(target = "updatedBy", source = "updatedBy", qualifiedByName = "longToString")
     @Mapping(target = "deleted", source = "deletedAt", qualifiedByName = "mapDeleted")
+    @Mapping(target = "active", source = "active")
     ProductResponse toResponse(Product product);
 
     /**
@@ -66,6 +70,8 @@ public interface ProductMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "active", source = "active")
     void updateEntity(@MappingTarget Product product, ProductUpdateRequest request);
 
     /**
@@ -74,5 +80,14 @@ public interface ProductMapper {
     @Named("mapDeleted")
     default boolean mapDeleted(LocalDateTime deletedAt) {
         return deletedAt != null;
+    }
+
+    /**
+     * Converts Long to String for ID fields.
+     * Returns null if the Long value is null.
+     */
+    @Named("longToString")
+    default String longToString(Long value) {
+        return value == null ? null : String.valueOf(value);
     }
 }

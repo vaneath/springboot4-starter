@@ -32,6 +32,8 @@ public interface RoleMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "active", source = "active")
     Role toEntity(RoleCreateRequest request);
 
     /**
@@ -40,7 +42,11 @@ public interface RoleMapper {
      * @param role the Role entity
      * @return RoleResponse DTO
      */
+    @Mapping(target = "id", source = "id", qualifiedByName = "longToString")
+    @Mapping(target = "createdBy", source = "createdBy", qualifiedByName = "longToString")
+    @Mapping(target = "updatedBy", source = "updatedBy", qualifiedByName = "longToString")
     @Mapping(target = "deleted", source = "deletedAt", qualifiedByName = "mapDeleted")
+    @Mapping(target = "active", source = "active")
     RoleResponse toResponse(Role role);
 
     /**
@@ -64,6 +70,8 @@ public interface RoleMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "deleted", ignore = true)
+    @Mapping(target = "active", source = "active")
     void updateEntity(@MappingTarget Role role, RoleUpdateRequest request);
 
     /**
@@ -72,5 +80,14 @@ public interface RoleMapper {
     @Named("mapDeleted")
     default boolean mapDeleted(LocalDateTime deletedAt) {
         return deletedAt != null;
+    }
+
+    /**
+     * Converts Long to String for ID fields.
+     * Returns null if the Long value is null.
+     */
+    @Named("longToString")
+    default String longToString(Long value) {
+        return value == null ? null : String.valueOf(value);
     }
 }

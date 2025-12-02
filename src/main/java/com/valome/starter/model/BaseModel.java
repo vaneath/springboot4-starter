@@ -54,11 +54,11 @@ public abstract class BaseModel {
 
     @Transient
     @Default
-    private boolean isDeleted = false;
+    private boolean deleted = false;
 
     @Default
     @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE")
-    private boolean isActive = true;
+    private boolean active = true;
 
     @PrePersist
     protected void onCreate() {
