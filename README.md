@@ -9,6 +9,7 @@ A production-ready Spring Boot starter template with JWT authentication, CRUD ge
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
 - [Setup Instructions](#setup-instructions)
+- [Renaming the Project](#6-rename-the-project-optional)
 - [Project Structure](#project-structure)
 - [CRUD Generator](#crud-generator)
 - [Configuration](#configuration)
@@ -86,7 +87,44 @@ jwt.access.secret=your-generated-secret-here
 jwt.refresh.secret=your-generated-secret-here
 ```
 
-### 6. Build and Run
+### 6. Rename the Project (Optional)
+
+If you want to customize this starter template with your own project name and package structure, use the rename script:
+
+```bash
+./rename-project.sh <new-group> <new-name> [new-description]
+```
+
+**Examples:**
+
+```bash
+# Basic rename
+./rename-project.sh com.mycompany myapp
+
+# With custom description
+./rename-project.sh com.mycompany myapp "My Awesome Application"
+```
+
+**What the script does:**
+
+- Updates package names in all Java files
+- Renames package directories
+- Updates `build.gradle`, `settings.gradle`, and `gradle.properties`
+- Updates `application.properties` files
+- Renames the main application class
+- Updates database name references
+- Updates README.md and other documentation
+
+**After renaming:**
+
+1. Create the new database: `CREATE DATABASE spring_<new-name>;`
+2. Rebuild: `./gradlew clean build`
+3. Review changes: `git diff`
+
+**Manual Configuration:**
+You can also manually edit `template-config.properties` and run the script without arguments to see current values.
+
+### 7. Build and Run
 
 Using Gradle wrapper:
 

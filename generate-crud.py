@@ -273,7 +273,7 @@ public class {self.entity_name} extends BaseModel {{
 import org.springframework.stereotype.Repository;
 
 import {BASE_PACKAGE}.model.{self.entity_name};
-import com.valome.starter.repository.jpa.core.BaseRepository;
+import {BASE_PACKAGE}.repository.jpa.core.BaseRepository;
 
 /**
  * Repository interface for {self.entity_name} entity operations.
