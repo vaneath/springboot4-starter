@@ -15,9 +15,9 @@ import com.valome.starter.util.ResponseHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/v1/auth")
-@Slf4j
 @RequiredArgsConstructor
 public class AuthApiController {
     private final AuthService authService;
@@ -25,7 +25,7 @@ public class AuthApiController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
-            return ResponseHandler.success("Login successful", authService.login(request));
+            return ResponseHandler.success("Login successfully", authService.login(request));
         } catch (Exception e) {
             return ResponseHandler.error(e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
