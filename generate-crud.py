@@ -520,7 +520,6 @@ import {BASE_PACKAGE}.dto.search.PaginationRequest;
 import {BASE_PACKAGE}.mapper.{self.entity_name}Mapper;
 import {BASE_PACKAGE}.model.{self.entity_name};
 import {BASE_PACKAGE}.repository.jpa.{self.entity_name}Repository;
-import {BASE_PACKAGE}.service.{self.entity_lower}.{self.entity_name}Service;
 import {BASE_PACKAGE}.service.search.PaginationService;
 import {BASE_PACKAGE}.exception.ResourceNotFoundException;
 
