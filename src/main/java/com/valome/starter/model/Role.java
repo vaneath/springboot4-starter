@@ -1,6 +1,11 @@
 package com.valome.starter.model;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.security.core.GrantedAuthority;
+
+import com.valome.starter.dto.search.FieldConfig;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,4 +32,8 @@ public class Role extends BaseModel implements GrantedAuthority {
     public String getAuthority() {
         return this.name;
     }
+
+    public static final List<FieldConfig> PAGINATION_FIELDS = List.of(
+            new FieldConfig("name", String.class, true, true),
+            new FieldConfig("createdAt", LocalDateTime.class, false, true));
 }
