@@ -52,10 +52,6 @@ public abstract class BaseModel {
     @Column(name = "deleted_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime deletedAt;
 
-    @Transient
-    @Default
-    private boolean deleted = false;
-
     @Default
     @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active = true;
