@@ -39,12 +39,12 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public Page<ProductResponse> search(PaginationRequest request) {
         log.debug("Searching products with request: {}", request);
-        
+
         Page<Product> productPage = paginationService.search(
-                request, 
-                productRepository, 
+                request,
+                productRepository,
                 Product.PAGINATION_FIELDS);
-        
+
         return productPage.map(productMapper::toResponse);
     }
 
@@ -91,7 +91,8 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
 
-        product.setDeletedAt(LocalDateTime.now());
+        product.softDelete();
+
         productRepository.save(product);
 
         log.info("Deleted product with ID: {}", id);

@@ -22,7 +22,7 @@ import com.valome.starter.util.ResponseHandler;
  * Provides RESTful endpoints for CRUD operations on products.
  */
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/v1/products")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
