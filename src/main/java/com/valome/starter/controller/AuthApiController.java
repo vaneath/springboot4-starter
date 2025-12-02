@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.valome.starter.dto.auth.AuthRequest;
 import com.valome.starter.dto.auth.RegisterRequest;
 import com.valome.starter.service.auth.AuthService;
+import com.valome.starter.util.ResponseHandler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,21 +25,21 @@ public class AuthApiController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
-            return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
+            return ResponseHandler.success("Login successful", authService.login(request));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            return ResponseHandler.error(e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+            return ResponseHandler.success("User registered successfully", authService.register(request));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseHandler.error(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             log.error("Error registering user", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to register user");
+            return ResponseHandler.error("Failed to register user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
