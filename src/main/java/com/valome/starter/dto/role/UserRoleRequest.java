@@ -7,7 +7,7 @@ import lombok.Data;
  * DTO for assigning a role to a user.
  */
 @Data
-public class AssignRoleRequest {
+public class UserRoleRequest {
 
     @NotNull(message = "User ID is required")
     private Long userId;

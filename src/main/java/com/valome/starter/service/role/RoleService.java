@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 
-import com.valome.starter.dto.role.AssignRoleRequest;
+import com.valome.starter.dto.role.UserRoleRequest;
 import com.valome.starter.dto.role.RoleCreateRequest;
 import com.valome.starter.dto.role.RoleResponse;
 import com.valome.starter.dto.role.RoleUpdateRequest;
@@ -71,7 +71,7 @@ public interface RoleService {
      * @throws ResourceNotFoundException if user or role not found
      * @throws IllegalArgumentException  if role is already assigned to user
      */
-    RoleResponse assignRoleToUser(AssignRoleRequest request);
+    RoleResponse assignRoleToUser(UserRoleRequest request);
 
     /**
      * Removes a role from a user.
@@ -80,7 +80,7 @@ public interface RoleService {
      * @param roleId the role ID
      * @throws ResourceNotFoundException if user, role, or assignment not found
      */
-    void removeRoleFromUser(Long userId, Long roleId);
+    void removeRoleFromUser(UserRoleRequest request);
 
     /**
      * Gets all roles assigned to a user.

@@ -1,7 +1,5 @@
 package com.valome.starter.controller;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -15,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.valome.starter.dto.core.SuccessResponse;
-import com.valome.starter.dto.role.AssignRoleRequest;
+import com.valome.starter.dto.role.UserRoleRequest;
 import com.valome.starter.dto.role.RoleCreateRequest;
 import com.valome.starter.dto.role.RoleResponse;
 import com.valome.starter.dto.role.RoleUpdateRequest;
@@ -116,12 +114,12 @@ public class RoleApiController {
     /**
      * Assigns a role to a user.
      * 
-     * @param request the assignment request containing userId and roleId
+     * @param request the assignment request containing roleId and userId
      * @return assigned role response with HTTP 200
      */
     @PostMapping("/assign")
     public ResponseEntity<SuccessResponse<RoleResponse>> assignRoleToUser(
-            @Valid @RequestBody AssignRoleRequest request) {
+            @Valid @RequestBody UserRoleRequest request) {
         log.info("REST request to assign role {} to user {}", request.getRoleId(), request.getUserId());
 
         RoleResponse response = roleService.assignRoleToUser(request);
@@ -131,31 +129,14 @@ public class RoleApiController {
     /**
      * Removes a role from a user.
      * 
-     * @param userId the user ID
-     * @param roleId the role ID
-     * @return HTTP 200 with success message
+     * @param request the assignment request containing userId and roleId
+     * @return removed role response with HTTP 200
      */
-    @DeleteMapping("/users/{userId}/roles/{roleId}")
-    public ResponseEntity<SuccessResponse<Object>> removeRoleFromUser(
-            @PathVariable Long userId,
-            @PathVariable Long roleId) {
-        log.info("REST request to remove role {} from user {}", roleId, userId);
+    @DeleteMapping("/unassign")
+    public ResponseEntity<SuccessResponse<Object>> removeRoleFromUser(@Valid @RequestBody UserRoleRequest request) {
+        log.info("REST request to remove role {} from user {}", request.getRoleId(), request.getUserId());
 
-        roleService.removeRoleFromUser(userId, roleId);
+        roleService.removeRoleFromUser(request);
         return ResponseHandler.success("Role removed successfully");
-    }
-
-    /**
-     * Gets all roles assigned to a user.
-     * 
-     * @param userId the user ID
-     * @return list of role responses with HTTP 200
-     */
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<SuccessResponse<List<RoleResponse>>> getUserRoles(@PathVariable Long userId) {
-        log.debug("REST request to get roles for user ID: {}", userId);
-
-        List<RoleResponse> response = roleService.getUserRoles(userId);
-        return ResponseHandler.success("User roles retrieved successfully", response);
     }
 }

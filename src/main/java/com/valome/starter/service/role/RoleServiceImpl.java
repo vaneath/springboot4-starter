@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.valome.starter.dto.role.AssignRoleRequest;
+import com.valome.starter.dto.role.UserRoleRequest;
 import com.valome.starter.dto.role.RoleCreateRequest;
 import com.valome.starter.dto.role.RoleResponse;
 import com.valome.starter.dto.role.RoleUpdateRequest;
@@ -121,7 +121,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public RoleResponse assignRoleToUser(AssignRoleRequest request) {
+    public RoleResponse assignRoleToUser(UserRoleRequest request) {
         log.info("Assigning role {} to user {}", request.getRoleId(), request.getUserId());
 
         // Validate user exists
@@ -150,24 +150,16 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public void removeRoleFromUser(Long userId, Long roleId) {
-        log.info("Removing role {} from user {}", roleId, userId);
-
-        // Validate user exists
-        userJpaRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
-
-        // Validate role exists
-        roleJpaRepository.findById(roleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found with ID: " + roleId));
+    public void removeRoleFromUser(UserRoleRequest request) {
+        log.info("Removing role {} from user {}", request.getRoleId(), request.getUserId());
 
         // Check if assignment exists and remove it
-        UserRole userRole = userRoleJpaRepository.findByIdUserIdAndIdRoleId(userId, roleId)
+        UserRole userRole = userRoleJpaRepository.findByIdUserIdAndIdRoleId(request.getUserId(), request.getRoleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Role is not assigned to user"));
 
         userRoleJpaRepository.delete(userRole);
 
-        log.info("Removed role {} from user {}", roleId, userId);
+        log.info("Removed role {} from user {}", request.getRoleId(), request.getUserId());
     }
 
     @Override
