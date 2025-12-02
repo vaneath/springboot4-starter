@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.valome.starter.dto.search.FieldConfig;
 
+import org.hibernate.annotations.BatchSize;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -54,7 +56,8 @@ public class User extends BaseModel implements UserDetails {
     @Column(name = "email")
     private String email;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+    @BatchSize(size = 20)
     @JsonIgnore
     private List<UserRole> userRoles;
 
