@@ -54,11 +54,12 @@ public class User extends BaseModel implements UserDetails {
     @Column(name = "email")
     private String email;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<UserRole> userRoles;
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (userRoles == null || userRoles.isEmpty()) {
             return Collections.emptyList();
@@ -69,6 +70,7 @@ public class User extends BaseModel implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public @Nullable String getPassword() {
         return this.password;
     }
@@ -76,6 +78,15 @@ public class User extends BaseModel implements UserDetails {
     @Override
     public String getUsername() {
         return this.username;
+    }
+
+    public List<String> getRoles() {
+        if (userRoles == null || userRoles.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return userRoles.stream()
+                .map(userRole -> userRole.getRole().getAuthority())
+                .collect(Collectors.toList());
     }
 
     public static final List<FieldConfig> PAGINATION_FIELDS = List.of(
