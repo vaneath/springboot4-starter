@@ -1,10 +1,12 @@
 package com.valome.starter.exception;
 
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.valome.starter.dto.core.ErrorResponse;
 import com.valome.starter.util.ResponseHandler;
@@ -37,6 +39,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return ResponseHandler.error(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    // Handle No Resource Found exceptions (404 for routes/resources)
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
+        return ResponseHandler.error("Resource not found: " + ex.getResourcePath(), HttpStatus.NOT_FOUND);
+    }
+
+    // Handle Property Reference exceptions (invalid field/property references)
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErrorResponse> handlePropertyReference(PropertyReferenceException ex) {
+        return ResponseHandler.error(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     // Handle all uncaught exceptions (fallback)

@@ -1,14 +1,22 @@
 package com.valome.starter.service.user;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.valome.starter.builder.SortBuilder;
 import com.valome.starter.dto.auth.RegisterRequest;
+import com.valome.starter.dto.search.PaginationRequest;
 import com.valome.starter.jpa.user.UserJpaRepository;
 import com.valome.starter.model.User;
+import com.valome.starter.service.search.GenericSpecification;
 import com.valome.starter.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -63,5 +71,15 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
+    }
+
+    @Override
+    public Page<User> search(PaginationRequest request) {
+        Specification<User> spec = new GenericSpecification<>(request, User.PAGINATION_FIELDS);
+
+        Sort sort = SortBuilder.build(request.getSorts(), User.PAGINATION_FIELDS);
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), sort);
+
+        return jpaRepository.findAll(spec, pageable);
     }
 }

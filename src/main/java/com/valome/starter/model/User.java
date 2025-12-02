@@ -1,14 +1,17 @@
 package com.valome.starter.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.valome.starter.dto.search.FieldConfig;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -61,4 +64,10 @@ public class User extends BaseModel implements UserDetails {
     public String getUsername() {
         return this.username;
     }
+
+    public static final List<FieldConfig> PAGINATION_FIELDS = List.of(
+            new FieldConfig("firstName", String.class, true, true),
+            new FieldConfig("lastName", String.class, true, true),
+            new FieldConfig("email", String.class, true, true),
+            new FieldConfig("createdAt", LocalDateTime.class, false, true));
 }

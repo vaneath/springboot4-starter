@@ -67,8 +67,6 @@ public class JwtService {
     }
 
     private String extractUsername(String token, String secret) {
-        log.debug("Secret: " + secret); // Should be a long base64 string
-        log.debug("Token: " + token); // Should have 2 periods
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)))
                 .build()
