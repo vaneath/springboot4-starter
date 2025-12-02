@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Base repository interface that filters out soft-deleted records.
@@ -51,6 +52,16 @@ public interface BaseRepository<T, ID> extends JpaRepository<T, ID>, JpaSpecific
     @Query("SELECT e FROM #{#entityName} e WHERE e.deletedAt IS NULL")
     @Override
     Page<T> findAll(Pageable pageable);
+
+    /**
+     * Find a non-deleted entity by ID.
+     * 
+     * @param id the entity ID
+     * @return Optional containing the entity if found and not deleted, empty otherwise
+     */
+    @Query("SELECT e FROM #{#entityName} e WHERE e.id = ?1 AND e.deletedAt IS NULL")
+    @Override
+    Optional<T> findById(ID id);
 
     /**
      * Count all non-deleted entities.
