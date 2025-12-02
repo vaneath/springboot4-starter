@@ -92,18 +92,69 @@ def to_lower_camel_case(camel_str):
     """Convert CamelCase to lowerCamelCase"""
     return camel_str[0].lower() + camel_str[1:] if camel_str else ""
 
+def pluralize(word):
+    """
+    Convert a word to its plural form following English grammar rules.
+    
+    Rules handled:
+    - Words ending in s, sh, ch, x, z → add 'es'
+    - Words ending in 'y' preceded by a consonant → replace 'y' with 'ies'
+    - Words ending in 'y' preceded by a vowel → add 's'
+    - Words ending in 'f' or 'fe' → replace with 'ves' (common cases)
+    - Words ending in 'o' preceded by a consonant → add 'es'
+    - Words ending in 'o' preceded by a vowel → add 's'
+    - Default → add 's'
+    """
+    if not word:
+        return word
+    
+    word_lower = word.lower()
+    vowels = {'a', 'e', 'i', 'o', 'u'}
+    
+    # Words ending in s, sh, ch, x, z → add 'es'
+    if word_lower.endswith(('s', 'sh', 'ch', 'x', 'z')):
+        return word + 'es'
+    
+    # Words ending in 'y' preceded by a consonant → replace 'y' with 'ies'
+    # Words ending in 'y' preceded by a vowel → add 's'
+    if word_lower.endswith('y'):
+        if len(word_lower) > 1 and word_lower[-2] not in vowels:
+            return word[:-1] + 'ies'
+        else:
+            return word + 's'
+    
+    # Words ending in 'f' → replace with 'ves'
+    if word_lower.endswith('f'):
+        # Common exceptions: roof → roofs, chief → chiefs, etc.
+        # But for most cases: wolf → wolves, leaf → leaves
+        return word[:-1] + 'ves'
+    
+    # Words ending in 'fe' → replace with 'ves'
+    if word_lower.endswith('fe'):
+        return word[:-2] + 'ves'
+    
+    # Words ending in 'o' preceded by a consonant → add 'es'
+    # Words ending in 'o' preceded by a vowel → add 's'
+    if word_lower.endswith('o'):
+        if len(word_lower) > 1 and word_lower[-2] not in vowels:
+            return word + 'es'
+        else:
+            return word + 's'
+    
+    # Default: add 's'
+    return word + 's'
+
 class CrudGenerator:
     def __init__(self, entity_name, fields):
         self.entity_name = entity_name
         self.entity_lower = entity_name.lower()
         self.entity_camel = to_lower_camel_case(entity_name)
-        self.table_name = to_snake_case(entity_name).replace('_', '_') + 's'  # pluralize
+        # Pluralize table name (snake_case)
+        snake_name = to_snake_case(entity_name)
+        self.table_name = pluralize(snake_name)
         # Route base in kebab-case plural (e.g., MessageTemplate -> message-templates, Ability -> abilities)
-        kebab = to_snake_case(entity_name).replace('_', '-')
-        if kebab.endswith('y'):
-            self.route_base = kebab[:-1] + 'ies'
-        else:
-            self.route_base = kebab + 's'
+        kebab = snake_name.replace('_', '-')
+        self.route_base = pluralize(kebab)
         self.fields = self.parse_fields(fields)
         
     def parse_fields(self, fields_str):
