@@ -26,17 +26,15 @@ public class UserApiController {
 
     @GetMapping("/profile")
     public ResponseEntity<SuccessResponse<User>> getProfile() {
-        return ResponseHandler.success("Profile retrieved successfully", userService.getProfile());
+        return ResponseHandler.success(
+                "Profile retrieved successfully",
+                userService.getProfile());
     }
 
-    @PostMapping("/list")
-    public ResponseEntity<SuccessResponse<Page<User>>> search(
-            @RequestBody(required = false) PaginationRequest request) {
-
-        if (request == null) {
-            request = new PaginationRequest();
-        }
-
-        return ResponseHandler.success("Users searched successfully", userService.search(request));
+    @PostMapping("/search")
+    public ResponseEntity<SuccessResponse<Page<User>>> search(@RequestBody PaginationRequest request) {
+        return ResponseHandler.success(
+                "Users retrieved successfully",
+                userService.search(request));
     }
 }

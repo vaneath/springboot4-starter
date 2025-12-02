@@ -28,6 +28,14 @@ public class PaginationServiceImpl implements PaginationService {
     @Override
     public <T> Page<T> search(PaginationRequest request, JpaSpecificationExecutor<T> repository,
             List<FieldConfig> fieldConfigs) {
+        // Handle null request - create default initialized request
+        if (request == null) {
+            request = PaginationRequest.createDefault();
+        } else {
+            // Ensure all fields are initialized (not null)
+            request.ensureInitialized();
+        }
+
         // Validate request
         validateRequest(request, fieldConfigs);
 
@@ -59,6 +67,8 @@ public class PaginationServiceImpl implements PaginationService {
      * @throws IllegalArgumentException if validation fails
      */
     private void validateRequest(PaginationRequest request, List<FieldConfig> fieldConfigs) {
+        // Note: request should never be null at this point as it's handled above
+        // but keeping check for safety
         if (request == null) {
             throw new IllegalArgumentException("Pagination request cannot be null");
         }

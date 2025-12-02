@@ -3,6 +3,7 @@ package com.valome.starter.exception;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -51,6 +52,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PropertyReferenceException.class)
     public ResponseEntity<ErrorResponse> handlePropertyReference(PropertyReferenceException ex) {
         return ResponseHandler.error(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle HTTP Message Not Readable exceptions (empty/malformed request body)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        String message = ex.getMessage();
+        if (message != null && message.contains("No content to map due to end-of-input")) {
+            return ResponseHandler.error(
+                    "Request body is empty. Please send an empty JSON object {} or provide a valid request body.",
+                    HttpStatus.BAD_REQUEST);
+        }
+        if (message != null && message.contains("Required request body is missing")) {
+            return ResponseHandler.error(
+                    "Request body is required but was not provided.",
+                    HttpStatus.BAD_REQUEST);
+        }
+        return ResponseHandler.error("Invalid request body format: " + (message != null ? message : "Malformed JSON"),
+                HttpStatus.BAD_REQUEST);
     }
 
     // Handle all uncaught exceptions (fallback)

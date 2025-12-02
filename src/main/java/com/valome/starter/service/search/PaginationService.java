@@ -16,10 +16,13 @@ public interface PaginationService {
 
     /**
      * Performs paginated search with filtering, sorting, and global search.
+     * Automatically handles null requests by creating a default initialized
+     * request.
      * 
      * @param <T>          The entity type
      * @param request      The pagination request containing filters, sorts, search,
-     *                     page, and size
+     *                     page, and size. Can be null - will be replaced with
+     *                     default values.
      * @param repository   The JPA repository that supports specification execution
      * @param fieldConfigs The whitelist of allowed fields for filtering, sorting,
      *                     and searching
