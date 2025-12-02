@@ -11,6 +11,5 @@ public class BaseResponse {
     private String updatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private boolean deleted;
     private boolean active;
 }

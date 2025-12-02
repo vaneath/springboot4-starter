@@ -7,7 +7,6 @@ import com.valome.starter.dto.role.RoleResponse;
 import com.valome.starter.dto.role.RoleUpdateRequest;
 import com.valome.starter.model.Role;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -45,7 +44,6 @@ public interface RoleMapper {
     @Mapping(target = "id", source = "id", qualifiedByName = "longToString")
     @Mapping(target = "createdBy", source = "createdBy", qualifiedByName = "longToString")
     @Mapping(target = "updatedBy", source = "updatedBy", qualifiedByName = "longToString")
-    @Mapping(target = "deleted", source = "deletedAt", qualifiedByName = "mapDeleted")
     @Mapping(target = "active", source = "active")
     RoleResponse toResponse(Role role);
 
@@ -73,14 +71,6 @@ public interface RoleMapper {
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "active", source = "active")
     void updateEntity(@MappingTarget Role role, RoleUpdateRequest request);
-
-    /**
-     * Maps deletedAt timestamp to boolean deleted flag.
-     */
-    @Named("mapDeleted")
-    default boolean mapDeleted(LocalDateTime deletedAt) {
-        return deletedAt != null;
-    }
 
     /**
      * Converts Long to String for ID fields.

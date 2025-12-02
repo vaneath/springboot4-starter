@@ -7,7 +7,6 @@ import com.valome.starter.dto.product.ProductResponse;
 import com.valome.starter.dto.product.ProductUpdateRequest;
 import com.valome.starter.model.Product;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -45,7 +44,6 @@ public interface ProductMapper {
     @Mapping(target = "id", source = "id", qualifiedByName = "longToString")
     @Mapping(target = "createdBy", source = "createdBy", qualifiedByName = "longToString")
     @Mapping(target = "updatedBy", source = "updatedBy", qualifiedByName = "longToString")
-    @Mapping(target = "deleted", source = "deletedAt", qualifiedByName = "mapDeleted")
     @Mapping(target = "active", source = "active")
     ProductResponse toResponse(Product product);
 
@@ -73,14 +71,6 @@ public interface ProductMapper {
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "active", source = "active")
     void updateEntity(@MappingTarget Product product, ProductUpdateRequest request);
-
-    /**
-     * Maps deletedAt timestamp to boolean deleted flag.
-     */
-    @Named("mapDeleted")
-    default boolean mapDeleted(LocalDateTime deletedAt) {
-        return deletedAt != null;
-    }
 
     /**
      * Converts Long to String for ID fields.

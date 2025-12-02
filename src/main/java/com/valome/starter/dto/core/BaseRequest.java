@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class BaseRequest {
-    private boolean active;
+    private boolean active = true;
 }
