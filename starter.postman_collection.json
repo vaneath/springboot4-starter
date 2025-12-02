@@ -1,0 +1,312 @@
+{
+	"info": {
+		"_postman_id": "05b2a49f-494e-4852-bf1a-1fdaf680f9b0",
+		"name": "starter",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "42735985"
+	},
+	"item": [
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"ACCESS_TOKEN\",  pm.response.json().data.accessToken);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"vaneath\",\n    \"password\": \"vaneath@3\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{BASE_URL}}/{{ENTITY}}/login"
+					},
+					"response": []
+				},
+				{
+					"name": "register",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"yoo\",\n    \"password\": \"vaneath@3\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{BASE_URL}}/{{ENTITY}}/register"
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							"const loc = pm.execution.location;",
+							"const folderName = loc[loc.length - 2];   // last item = folder name",
+							"",
+							"pm.environment.set(\"ENTITY\", folderName);",
+							"console.log(\"Folder Name:\", folderName);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "search",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "// {\n//     // \"search\": \"john\",\n//     // \"filters\": {\n//     //     \"status\": \"ACTIVE\",\n//     //     \"region\": \"north\"\n//     // },\n//     \"sorts\": [\n//         {\n//             \"field\": \"firstName\",\n//             \"direction\": \"desc\"\n//         }\n//         // {\n//         //     \"field\": \"firstName\",\n//         //     \"direction\": \"asc\"\n//         // }\n//     ],\n//     \"page\": 1.1,\n//     \"size\": 1\n// }\n{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{BASE_URL}}/{{ENTITY}}/search"
+					},
+					"response": []
+				},
+				{
+					"name": "get-profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{BASE_URL}}/{{ENTITY}}/profile"
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							"const loc = pm.execution.location;",
+							"const folderName = loc[loc.length - 2];   // last item = folder name",
+							"",
+							"pm.environment.set(\"ENTITY\", folderName);",
+							"console.log(\"Folder Name:\", folderName);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "roles",
+			"item": [
+				{
+					"name": "search",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const loc = pm.execution.location;",
+									"const requestName = loc[loc.length - 1];",
+									"",
+									"pm.environment.set(\"REQUEST_NAME\", requestName);",
+									"console.log(\"Request Name:\", requestName);",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n//     // \"search\": \"john\",\n//     // \"filters\": {\n//     //     \"status\": \"ACTIVE\",\n//     //     \"region\": \"north\"\n//     // },\n    \"sorts\": [\n        {\n            \"field\": \"createdAt\",\n            \"direction\": \"desc\"\n        }\n        // {\n        //     \"field\": \"firstName\",\n        //     \"direction\": \"asc\"\n        // }\n    ]\n//     \"page\": 1.1,\n//     \"size\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{BASE_URL}}/{{ENTITY}}/{{REQUEST_NAME}}"
+					},
+					"response": []
+				},
+				{
+					"name": "create",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ROLE_SUPER_ADMIN\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{BASE_URL}}/{{ENTITY}}"
+					},
+					"response": []
+				},
+				{
+					"name": "assign",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"roleId\": \"5\",\n    \"userId\": \"3\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{BASE_URL}}/{{ENTITY}}/assign"
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							"const loc = pm.execution.location;",
+							"const folderName = loc[loc.length - 2];   // last item = folder name",
+							"",
+							"pm.environment.set(\"ENTITY\", folderName);",
+							"console.log(\"Folder Name:\", folderName);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": {
+			"token": "{{ACCESS_TOKEN}}"
+		}
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": ""
+		}
+	]
+}

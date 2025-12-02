@@ -157,6 +157,9 @@ class CrudGenerator:
         self.route_base = pluralize(kebab)
         self.fields = self.parse_fields(fields)
         
+        self.api_version = "v1"
+        self.api_route = f"/{self.api_version}/{self.route_base}"
+
     def parse_fields(self, fields_str):
         """Parse field definitions like 'name:String:@NotBlank,age:Integer,email:String:@Email'"""
         fields = []
@@ -267,11 +270,10 @@ public class {self.entity_name} extends BaseModel {{
         """Generate JPA Repository"""
         template = f"""package {BASE_PACKAGE}.repository.jpa;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import {BASE_PACKAGE}.model.{self.entity_name};
+import com.valome.starter.repository.jpa.core.BaseRepository;
 
 /**
  * Repository interface for {self.entity_name} entity operations.
@@ -279,7 +281,7 @@ import {BASE_PACKAGE}.model.{self.entity_name};
  * Provides standard CRUD operations and specification support for advanced querying.
  */
 @Repository
-public interface {self.entity_name}Repository extends JpaRepository<{self.entity_name}, Long>, JpaSpecificationExecutor<{self.entity_name}> {{
+public interface {self.entity_name}Repository extends BaseRepository<{self.entity_name}, Long> {{
 }}
 """
         return template
@@ -507,8 +509,6 @@ public interface {self.entity_name}Service {{
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDateTime;
-
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -595,7 +595,7 @@ public class {self.entity_name}ServiceImpl implements {self.entity_name}Service 
         {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("{self.entity_name} not found with ID: " + id));
 
-        {self.entity_camel}.setDeletedAt(LocalDateTime.now());
+        {self.entity_camel}.softDelete();
         {self.entity_camel}Repository.save({self.entity_camel});
 
         log.info("Deleted {self.entity_lower} with ID: {{}}", id);
@@ -615,7 +615,6 @@ import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}Response;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}UpdateRequest;
 import {BASE_PACKAGE}.model.{self.entity_name};
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -650,7 +649,6 @@ public interface {self.entity_name}Mapper {{
      * @param {self.entity_camel} the {self.entity_name} entity
      * @return {self.entity_name}Response DTO
      */
-    @Mapping(target = "deleted", source = "deletedAt", qualifiedByName = "mapDeleted")
     {self.entity_name}Response toResponse({self.entity_name} {self.entity_camel});
 
     /**
@@ -675,14 +673,6 @@ public interface {self.entity_name}Mapper {{
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
     void updateEntity(@MappingTarget {self.entity_name} {self.entity_camel}, {self.entity_name}UpdateRequest request);
-
-    /**
-     * Maps deletedAt timestamp to boolean deleted flag.
-     */
-    @Named("mapDeleted")
-    default boolean mapDeleted(LocalDateTime deletedAt) {{
-        return deletedAt != null;
-    }}
 }}
 """
         return template
@@ -713,7 +703,7 @@ import {BASE_PACKAGE}.util.ResponseHandler;
  * Provides RESTful endpoints for CRUD operations on {self.entity_lower}s.
  */
 @RestController
-@RequestMapping("/{self.route_base}")
+@RequestMapping("{self.api_route}")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
