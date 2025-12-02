@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.valome.starter.dto.auth.RegisterRequest;
 import com.valome.starter.jpa.user.UserJpaRepository;
 import com.valome.starter.model.User;
+import com.valome.starter.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,7 +45,7 @@ public class UserServiceImpl implements UserService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || authentication.getPrincipal() == null) {
-            throw new IllegalStateException("User not authenticated");
+            throw new IllegalArgumentException("User not authenticated");
         }
 
         String username;
@@ -53,12 +54,12 @@ public class UserServiceImpl implements UserService {
         } else if (authentication.getPrincipal() instanceof String) {
             username = (String) authentication.getPrincipal();
         } else {
-            throw new IllegalStateException("Invalid authentication principal");
+            throw new IllegalArgumentException("Invalid authentication principal");
         }
 
         User user = findByUsername(username);
         if (user == null) {
-            throw new IllegalStateException("User not found");
+            throw new ResourceNotFoundException("User not found");
         }
 
         return user;
