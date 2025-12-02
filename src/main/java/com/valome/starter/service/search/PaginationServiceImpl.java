@@ -42,6 +42,10 @@ public class PaginationServiceImpl implements PaginationService {
         // Build specification for filtering and searching
         Specification<T> spec = new GenericSpecification<>(request, fieldConfigs);
 
+        // Add soft-delete filter to exclude deleted records (deletedAt IS NULL)
+        Specification<T> softDeleteSpec = (root, query, cb) -> cb.isNull(root.get("deletedAt"));
+        spec = spec.and(softDeleteSpec);
+
         // Build sort
         Sort sort = SortBuilder.build(request.getSorts(), fieldConfigs);
 
