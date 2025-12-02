@@ -10,17 +10,68 @@ A production-ready Spring Boot starter template with JWT authentication, CRUD ge
 - **[Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)** - Customize the template for your project
 - **[README.md](README.md)** - This file (overview and reference)
 
-## Table of Contents
+---
+
+## 📑 Table of Contents
+
+<details>
+<summary>Click to expand navigation</summary>
+
+### Getting Started
 
 - [Quick Start](#quick-start)
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
+
+### Project Overview
+
 - [Project Structure](#project-structure)
+  - [Key Patterns](#key-patterns)
+    - [BaseModel](#basemodel)
+    - [BaseRepository](#baserepository)
+    - [Soft Delete](#soft-delete)
+
+### Development Tools
+
 - [CRUD Generator](#crud-generator)
+  - [Usage](#usage)
+  - [Examples](#examples)
+  - [Field Format](#field-format)
+  - [Generated Files](#generated-files)
+  - [After Generation](#after-generation)
+
+### Configuration
+
 - [Configuration](#configuration)
+  - [Database Configuration](#database-configuration)
+  - [JWT Configuration](#jwt-configuration)
+  - [Security Configuration](#security-configuration)
+  - [Logging Configuration](#logging-configuration)
+  - [Application Configuration](#application-configuration)
+
+### API Reference
+
 - [API Endpoints](#api-endpoints)
+  - [Base URL](#base-url)
+  - [Authentication Endpoints](#authentication-endpoints)
+  - [CRUD Endpoints Pattern](#crud-endpoints-pattern)
+  - [Example: Product Endpoints](#example-product-endpoints)
+  - [Search/Pagination Request Format](#searchpagination-request-format)
+  - [Response Format](#response-format)
+
+### Features & Development
+
 - [Features](#features)
 - [Development](#development)
+  - [Building the Project](#building-the-project)
+  - [Running Tests](#running-tests)
+  - [Running the Application](#running-the-application)
+  - [Development Tips](#development-tips)
+  - [Project Conventions](#project-conventions)
+
+</details>
+
+---
 
 ## Technology Stack
 
@@ -531,4 +582,10 @@ java -jar build/libs/starter-0.0.1-SNAPSHOT.jar
 
 ---
 
+<div align="center">
+
+**[⬆ Back to Top](#spring-boot-starter-project)** | **[Quick Start Guide](QUICK_START.md)** | **[Customization Guide](TEMPLATE_CUSTOMIZATION.md)**
+
 **Happy Coding! 🚀**
+
+</div>
