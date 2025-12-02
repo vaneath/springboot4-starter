@@ -2,6 +2,12 @@
 
 Get your Spring Boot application up and running in minutes!
 
+> 📖 **Documentation Navigation:**
+>
+> - [README.md](README.md) - Project overview and reference
+> - [Template Customization Guide](TEMPLATE_CUSTOMIZATION.md) - Customize the template
+> - [Quick Start Guide](QUICK_START.md) - This guide
+
 ## Step 1: Clone and Setup
 
 ```bash
@@ -120,5 +126,14 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 
 ## Need Help?
 
-- Check the main [README.md](README.md) for detailed documentation
+- **[README.md](README.md)** - Project overview, features, API reference, and more
+- **[Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)** - Detailed customization instructions
 - Review `template-config.properties` for configuration options
+
+---
+
+**Next Steps:**
+
+- Customize the template? See [Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)
+- Need API reference? See [README.md](README.md#api-endpoints)
+- Want to generate CRUD entities? See [README.md](README.md#crud-generator)

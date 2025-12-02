@@ -4,12 +4,17 @@ A production-ready Spring Boot starter template with JWT authentication, CRUD ge
 
 **Made by:** vaneath - vaneathzz@gmail.com
 
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICK_START.md)** - Get up and running in minutes
+- **[Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)** - Customize the template for your project
+- **[README.md](README.md)** - This file (overview and reference)
+
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-- [Renaming the Project](#6-rename-the-project-optional)
 - [Project Structure](#project-structure)
 - [CRUD Generator](#crud-generator)
 - [Configuration](#configuration)
@@ -20,7 +25,7 @@ A production-ready Spring Boot starter template with JWT authentication, CRUD ge
 ## Technology Stack
 
 - **Spring Boot:** 4.0.0
-- **Java:** 21
+- **Java:** 24
 - **Build Tool:** Gradle 9.2.1
 - **Database:** PostgreSQL
 - **Key Dependencies:**
@@ -39,111 +44,21 @@ Before you begin, ensure you have the following installed:
 - **PostgreSQL** (database server)
 - **Gradle** (or use the included Gradle wrapper)
 
-## Setup Instructions
+## Quick Start
 
-### 1. Clone the Repository
+For detailed setup instructions, see the **[Quick Start Guide](QUICK_START.md)**.
 
-```bash
-git clone <repository-url>
-cd starter
-```
+**Quick overview:**
 
-### 2. Configure Application Properties
-
-Copy the example properties file to create your configuration:
-
-```bash
-cp src/main/resources/application.example.properties src/main/resources/application.properties
-```
-
-### 3. Configure Database Connection
-
-Edit `src/main/resources/application.properties` and update the database configuration:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/spring_starter?useUnicode=yes&characterEncoding=UTF-8
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-```
-
-### 4. Create PostgreSQL Database
-
-```sql
-CREATE DATABASE spring_starter;
-```
-
-### 5. Configure JWT Secrets
-
-Generate secure JWT secrets using OpenSSL:
-
-```bash
-openssl rand -base64 32
-```
-
-Update the JWT configuration in `application.properties`:
-
-```properties
-jwt.access.secret=your-generated-secret-here
-jwt.refresh.secret=your-generated-secret-here
-```
-
-### 6. Rename the Project (Optional)
-
-If you want to customize this starter template with your own project name and package structure, use the rename script:
-
-```bash
-./rename-project.sh <new-group> <new-name> [new-description]
-```
-
-**Examples:**
-
-```bash
-# Basic rename
-./rename-project.sh com.mycompany myapp
-
-# With custom description
-./rename-project.sh com.mycompany myapp "My Awesome Application"
-```
-
-**What the script does:**
-
-- Updates package names in all Java files
-- Renames package directories
-- Updates `build.gradle`, `settings.gradle`, and `gradle.properties`
-- Updates `application.properties` files
-- Renames the main application class
-- Updates database name references
-- Updates README.md and other documentation
-
-**After renaming:**
-
-1. Create the new database: `CREATE DATABASE spring_<new-name>;`
-2. Rebuild: `./gradlew clean build`
-3. Review changes: `git diff`
-
-**Manual Configuration:**
-You can also manually edit `template-config.properties` and run the script without arguments to see current values.
-
-### 7. Build and Run
-
-Using Gradle wrapper:
-
-```bash
-# Build the project
-./gradlew build
-
-# Run the application
-./gradlew bootRun
-```
-
-Or using Gradle directly:
-
-```bash
-gradle build
-gradle bootRun
-```
+1. Clone the repository
+2. (Optional) Rename the project using `./rename-project.sh` - see [Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)
+3. Copy `application.example.properties` to `application.properties` and configure
+4. Create PostgreSQL database
+5. Build and run: `./gradlew bootRun`
 
 The application will start on `http://localhost:8080` with context path `/api`.
+
+**Want to customize the template?** Check out the **[Template Customization Guide](TEMPLATE_CUSTOMIZATION.md)** for detailed instructions on renaming packages, managing versions, and more.
 
 ## Project Structure
 

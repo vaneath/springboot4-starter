@@ -2,6 +2,12 @@
 
 This starter template is designed to be easily customizable. Here's how to adapt it to your needs.
 
+> 📖 **Documentation Navigation:**
+>
+> - [README.md](README.md) - Project overview and reference
+> - [Quick Start Guide](QUICK_START.md) - Initial setup instructions
+> - [Template Customization Guide](TEMPLATE_CUSTOMIZATION.md) - This guide
+
 ## Configuration Files
 
 ### `template-config.properties`
@@ -174,3 +180,8 @@ Automatically bump versions:
 ---
 
 **Tip:** Always run `./gradlew clean build` after renaming to ensure everything compiles correctly.
+
+## Related Documentation
+
+- **[Quick Start Guide](QUICK_START.md)** - Initial setup and configuration
+- **[README.md](README.md)** - Project overview, features, and API reference
