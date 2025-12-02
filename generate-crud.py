@@ -181,22 +181,59 @@ class CrudGenerator:
         """Generate JPA Entity Model"""
         imports = [
             "jakarta.persistence.*",
-            f"{BASE_PACKAGE}.model.core.BaseModel",
+            f"{BASE_PACKAGE}.dto.search.FieldConfig",
             "lombok.*",
-            "lombok.experimental.SuperBuilder"
+            "lombok.experimental.SuperBuilder",
+            "java.util.List"
         ]
         
         # Add imports based on field types
+        has_local_date_time = False
         for field in self.fields:
             if field['type'] in ['LocalDate', 'LocalDateTime']:
                 imports.append(f"java.time.{field['type']}")
+                if field['type'] == 'LocalDateTime':
+                    has_local_date_time = True
             elif field['type'] == 'BigDecimal':
                 imports.append("java.math.BigDecimal")
+        
+        # Always import LocalDateTime for createdAt field in PAGINATION_FIELDS
+        if not has_local_date_time:
+            imports.append("java.time.LocalDateTime")
         
         fields_code = ""
         for field in self.fields:
             fields_code += f"\n    @Column(name = \"{field['column_name']}\")\n"
             fields_code += f"    private {field['type']} {field['name']};\n"
+        
+        # Generate PAGINATION_FIELDS constant
+        pagination_fields = []
+        for field in self.fields:
+            field_type = field['type']
+            # Map Java type string to Class reference
+            if field_type == 'String':
+                type_class = 'String.class'
+            elif field_type == 'Integer':
+                type_class = 'Integer.class'
+            elif field_type == 'Long':
+                type_class = 'Long.class'
+            elif field_type == 'BigDecimal':
+                type_class = 'BigDecimal.class'
+            elif field_type == 'Boolean':
+                type_class = 'Boolean.class'
+            elif field_type == 'LocalDate':
+                type_class = 'LocalDate.class'
+            elif field_type == 'LocalDateTime':
+                type_class = 'LocalDateTime.class'
+            else:
+                type_class = 'String.class'  # Default
+            
+            pagination_fields.append(f'            new FieldConfig("{field["name"]}", {type_class}, true, true)')
+        
+        # Add createdAt field (filterable but not searchable, like in User model)
+        pagination_fields.append('            new FieldConfig("createdAt", LocalDateTime.class, false, true)')
+        
+        pagination_fields_str = ',\n'.join(pagination_fields)
         
         template = f"""package {BASE_PACKAGE}.model;
 
@@ -215,7 +252,14 @@ class CrudGenerator:
 @AllArgsConstructor
 @Table(name = "{self.table_name}")
 public class {self.entity_name} extends BaseModel {{
-{fields_code}}}
+{fields_code}
+    /**
+     * Field configurations for pagination, filtering, and searching.
+     * All fields are searchable and filterable by default.
+     */
+    public static final List<FieldConfig> PAGINATION_FIELDS = List.of(
+{pagination_fields_str});
+}}
 """
         return template
     
@@ -223,134 +267,23 @@ public class {self.entity_name} extends BaseModel {{
         """Generate JPA Repository"""
         template = f"""package {BASE_PACKAGE}.repository.jpa;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import {BASE_PACKAGE}.model.{self.entity_name};
 
-import java.util.Optional;
-
 /**
  * Repository interface for {self.entity_name} entity operations.
  * 
- * Provides standard CRUD operations plus custom queries for {self.entity_lower} management.
- * Includes soft delete support.
+ * Provides standard CRUD operations and specification support for advanced querying.
  */
 @Repository
-public interface {self.entity_name}Repository extends JpaRepository<{self.entity_name}, Long> {{
-
-    /**
-     * Finds all active (non-deleted) {self.entity_lower}s.
-     * 
-     * @param pageable pagination information
-     * @return Page of active {self.entity_lower}s
-     */
-    @Query("SELECT e FROM {self.entity_name} e WHERE e.deletedAt IS NULL")
-    Page<{self.entity_name}> findAllActive(Pageable pageable);
-
-    /**
-     * Finds an active {self.entity_lower} by ID.
-     * 
-     * @param id the {self.entity_lower} ID
-     * @return Optional containing the {self.entity_lower} if found and not deleted
-     */
-    @Query("SELECT e FROM {self.entity_name} e WHERE e.id = :id AND e.deletedAt IS NULL")
-    Optional<{self.entity_name}> findByIdAndNotDeleted(@Param("id") Long id);
-
-    /**
-     * Searches {self.entity_lower}s by various criteria.
-     * 
-     * @param searchTerm the term to search for
-     * @param pageable   pagination information
-     * @return Page of matching {self.entity_lower}s
-     */
-    @Query("SELECT e FROM {self.entity_name} e WHERE e.deletedAt IS NULL AND " +
-           "(LOWER(CAST(e.id AS string)) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-    Page<{self.entity_name}> search{self.entity_name}s(@Param("searchTerm") String searchTerm, Pageable pageable);
+public interface {self.entity_name}Repository extends JpaRepository<{self.entity_name}, Long>, JpaSpecificationExecutor<{self.entity_name}> {{
 }}
 """
         return template
     
-    def generate_jdbc_repository(self):
-        """Generate JDBC Repository for advanced pagination"""
-        # Build ALLOWED_COLUMNS map entries
-        columns_map = []
-        columns_map.append('            "id", FilterType.NUMBER')
-        columns_map.append('            "created_at", FilterType.DATE')
-        
-        for field in self.fields:
-            column_name = field['column_name']
-            field_type = field['type']
-            
-            # Map Java types to FilterType
-            if field_type in ['String']:
-                filter_type = 'FilterType.STRING'
-            elif field_type in ['Long', 'Integer', 'BigDecimal']:
-                filter_type = 'FilterType.NUMBER'
-            elif field_type in ['LocalDate', 'LocalDateTime']:
-                filter_type = 'FilterType.DATE'
-            elif field_type == 'Boolean':
-                filter_type = 'FilterType.BOOLEAN'
-            else:
-                filter_type = 'FilterType.STRING'  # Default to STRING
-            
-            columns_map.append(f'            "{column_name}", {filter_type}')
-        
-        columns_map_str = ',\n'.join(columns_map)
-        
-        template = f"""package {BASE_PACKAGE}.repository.jdbc;
-
-import java.util.Map;
-
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Repository;
-
-import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}Response;
-import {BASE_PACKAGE}.enums.FilterType;
-import {BASE_PACKAGE}.service.core.PaginationQueryService;
-import {BASE_PACKAGE}.util.FilterRequest;
-import {BASE_PACKAGE}.util.ValidationColumnUtil;
-import lombok.RequiredArgsConstructor;
-
-/**
- * JDBC Repository for {self.entity_name} advanced pagination and filtering.
- * 
- * Provides custom SQL-based pagination with column validation.
- */
-@Repository
-@RequiredArgsConstructor
-public class {self.entity_name}JdbcRepository {{
-    private final PaginationQueryService paginationQueryService;
-
-    private static final Map<String, FilterType> ALLOWED_COLUMNS = Map.of(
-{columns_map_str}
-    );
-
-    /**
-     * Retrieves paginated {self.entity_lower}s with advanced filtering.
-     * 
-     * @param filter the filter request containing pagination, sorting, and search criteria
-     * @return page of {self.entity_name}Response matching the filter criteria
-     */
-    public Page<{self.entity_name}Response> getPaginated{self.entity_name}s(FilterRequest filter) {{
-        ValidationColumnUtil.validate(filter, ALLOWED_COLUMNS);
-
-        String sql = "SELECT * FROM {self.table_name} WHERE deleted_at IS NULL";
-        String countSql = "SELECT COUNT(*) FROM {self.table_name} WHERE deleted_at IS NULL";
-
-        return paginationQueryService.executeQuery(
-                filter,
-                new StringBuilder(sql),
-                new StringBuilder(countSql),
-                {self.entity_name}Response.class);
-    }}
-}}
-"""
-        return template
     
     def generate_create_request(self):
         """Generate Create Request DTO"""
@@ -504,15 +437,14 @@ public class {self.entity_name}Response extends BaseResponse {{
     
     def generate_service_interface(self):
         """Generate Service Interface"""
-        template = f"""package {BASE_PACKAGE}.service;
+        template = f"""package {BASE_PACKAGE}.service.{self.entity_lower};
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}CreateRequest;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}Response;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}UpdateRequest;
-import {BASE_PACKAGE}.util.FilterRequest;
+import {BASE_PACKAGE}.dto.search.PaginationRequest;
 
 /**
  * Service interface for {self.entity_name} management operations.
@@ -523,12 +455,12 @@ import {BASE_PACKAGE}.util.FilterRequest;
 public interface {self.entity_name}Service {{
 
     /**
-     * Retrieves paginated {self.entity_lower}s with advanced filtering.
+     * Searches {self.entity_lower}s with pagination, filtering, and sorting.
      * 
-     * @param filter the filter request containing pagination, sorting, and search criteria
-     * @return page of {self.entity_lower} responses matching the filter criteria
+     * @param request the pagination request containing search, filters, sorts, page, and size
+     * @return page of {self.entity_lower} responses matching the criteria
      */
-    Page<{self.entity_name}Response> getPaginated{self.entity_name}s(FilterRequest filter);
+    Page<{self.entity_name}Response> search(PaginationRequest request);
 
     /**
      * Creates a new {self.entity_lower}.
@@ -536,33 +468,16 @@ public interface {self.entity_name}Service {{
      * @param request the {self.entity_lower} creation request
      * @return the created {self.entity_lower} response
      */
-    {self.entity_name}Response create{self.entity_name}({self.entity_name}CreateRequest request);
+    {self.entity_name}Response create({self.entity_name}CreateRequest request);
 
     /**
      * Retrieves a {self.entity_lower} by ID.
      * 
      * @param id the {self.entity_lower} ID
      * @return the {self.entity_lower} response
-     * @throws IllegalArgumentException if {self.entity_lower} not found or deleted
+     * @throws ResourceNotFoundException if {self.entity_lower} not found
      */
-    {self.entity_name}Response get{self.entity_name}ById(Long id);
-
-    /**
-     * Retrieves all active {self.entity_lower}s with pagination.
-     * 
-     * @param pageable pagination information
-     * @return page of {self.entity_lower} responses
-     */
-    Page<{self.entity_name}Response> getAll{self.entity_name}s(Pageable pageable);
-
-    /**
-     * Searches {self.entity_lower}s by term.
-     * 
-     * @param searchTerm the search term
-     * @param pageable   pagination information
-     * @return page of matching {self.entity_lower} responses
-     */
-    Page<{self.entity_name}Response> search{self.entity_name}s(String searchTerm, Pageable pageable);
+    {self.entity_name}Response getById(Long id);
 
     /**
      * Updates an existing {self.entity_lower}.
@@ -570,32 +485,24 @@ public interface {self.entity_name}Service {{
      * @param id      the {self.entity_lower} ID to update
      * @param request the update request
      * @return the updated {self.entity_lower} response
-     * @throws IllegalArgumentException if {self.entity_lower} not found or deleted
+     * @throws ResourceNotFoundException if {self.entity_lower} not found
      */
-    {self.entity_name}Response update{self.entity_name}(Long id, {self.entity_name}UpdateRequest request);
+    {self.entity_name}Response update(Long id, {self.entity_name}UpdateRequest request);
 
     /**
      * Soft deletes a {self.entity_lower}.
      * 
      * @param id the {self.entity_lower} ID to delete
-     * @throws IllegalArgumentException if {self.entity_lower} not found or already deleted
+     * @throws ResourceNotFoundException if {self.entity_lower} not found
      */
-    void delete{self.entity_name}(Long id);
-
-    /**
-     * Restores a soft-deleted {self.entity_lower}.
-     * 
-     * @param id the {self.entity_lower} ID to restore
-     * @throws IllegalArgumentException if {self.entity_lower} not found or not deleted
-     */
-    void restore{self.entity_name}(Long id);
+    void delete(Long id);
 }}
 """
         return template
     
     def generate_service_impl(self):
         """Generate Service Implementation"""
-        template = f"""package {BASE_PACKAGE}.service.impl;
+        template = f"""package {BASE_PACKAGE}.service.{self.entity_lower};
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -603,20 +510,19 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}CreateRequest;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}Response;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}UpdateRequest;
+import {BASE_PACKAGE}.dto.search.PaginationRequest;
 import {BASE_PACKAGE}.mapper.{self.entity_name}Mapper;
 import {BASE_PACKAGE}.model.{self.entity_name};
 import {BASE_PACKAGE}.repository.jpa.{self.entity_name}Repository;
-import {BASE_PACKAGE}.repository.jdbc.{self.entity_name}JdbcRepository;
-import {BASE_PACKAGE}.service.{self.entity_name}Service;
+import {BASE_PACKAGE}.service.{self.entity_lower}.{self.entity_name}Service;
+import {BASE_PACKAGE}.service.search.PaginationService;
 import {BASE_PACKAGE}.exception.ResourceNotFoundException;
-import {BASE_PACKAGE}.util.FilterRequest;
 
 /**
  * Implementation of {self.entity_name}Service interface.
@@ -631,16 +537,24 @@ import {BASE_PACKAGE}.util.FilterRequest;
 public class {self.entity_name}ServiceImpl implements {self.entity_name}Service {{
 
     private final {self.entity_name}Repository {self.entity_camel}Repository;
-    private final {self.entity_name}JdbcRepository {self.entity_camel}JdbcRepository;
     private final {self.entity_name}Mapper {self.entity_camel}Mapper;
+    private final PaginationService paginationService;
 
     @Override
-    public Page<{self.entity_name}Response> getPaginated{self.entity_name}s(FilterRequest filter) {{
-        return {self.entity_camel}JdbcRepository.getPaginated{self.entity_name}s(filter);
+    @Transactional(readOnly = true)
+    public Page<{self.entity_name}Response> search(PaginationRequest request) {{
+        log.debug("Searching {self.entity_lower}s with request: {{}}", request);
+        
+        Page<{self.entity_name}> {self.entity_camel}Page = paginationService.search(
+                request, 
+                {self.entity_camel}Repository, 
+                {self.entity_name}.PAGINATION_FIELDS);
+        
+        return {self.entity_camel}Page.map({self.entity_camel}Mapper::toResponse);
     }}
 
     @Override
-    public {self.entity_name}Response create{self.entity_name}({self.entity_name}CreateRequest request) {{
+    public {self.entity_name}Response create({self.entity_name}CreateRequest request) {{
         log.info("Creating new {self.entity_lower}");
 
         {self.entity_name} {self.entity_camel} = {self.entity_camel}Mapper.toEntity(request);
@@ -652,38 +566,20 @@ public class {self.entity_name}ServiceImpl implements {self.entity_name}Service 
 
     @Override
     @Transactional(readOnly = true)
-    public {self.entity_name}Response get{self.entity_name}ById(Long id) {{
+    public {self.entity_name}Response getById(Long id) {{
         log.debug("Fetching {self.entity_lower} by ID: {{}}", id);
 
-        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findByIdAndNotDeleted(id)
+        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("{self.entity_name} not found with ID: " + id));
 
         return {self.entity_camel}Mapper.toResponse({self.entity_camel});
     }}
 
     @Override
-    @Transactional(readOnly = true)
-    public Page<{self.entity_name}Response> getAll{self.entity_name}s(Pageable pageable) {{
-        log.debug("Fetching all {self.entity_lower}s with pagination: {{}}", pageable);
-
-        Page<{self.entity_name}> {self.entity_camel}Page = {self.entity_camel}Repository.findAllActive(pageable);
-        return {self.entity_camel}Page.map({self.entity_camel}Mapper::toResponse);
-    }}
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<{self.entity_name}Response> search{self.entity_name}s(String searchTerm, Pageable pageable) {{
-        log.debug("Searching {self.entity_lower}s with term: '{{}}', pagination: {{}}", searchTerm, pageable);
-
-        Page<{self.entity_name}> {self.entity_camel}Page = {self.entity_camel}Repository.search{self.entity_name}s(searchTerm, pageable);
-        return {self.entity_camel}Page.map({self.entity_camel}Mapper::toResponse);
-    }}
-
-    @Override
-    public {self.entity_name}Response update{self.entity_name}(Long id, {self.entity_name}UpdateRequest request) {{
+    public {self.entity_name}Response update(Long id, {self.entity_name}UpdateRequest request) {{
         log.info("Updating {self.entity_lower} with ID: {{}}", id);
 
-        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findByIdAndNotDeleted(id)
+        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("{self.entity_name} not found with ID: " + id));
 
         {self.entity_camel}Mapper.updateEntity({self.entity_camel}, request);
@@ -694,33 +590,16 @@ public class {self.entity_name}ServiceImpl implements {self.entity_name}Service 
     }}
 
     @Override
-    public void delete{self.entity_name}(Long id) {{
+    public void delete(Long id) {{
         log.info("Deleting {self.entity_lower} with ID: {{}}", id);
 
-        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findByIdAndNotDeleted(id)
+        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("{self.entity_name} not found with ID: " + id));
 
         {self.entity_camel}.setDeletedAt(LocalDateTime.now());
         {self.entity_camel}Repository.save({self.entity_camel});
 
         log.info("Deleted {self.entity_lower} with ID: {{}}", id);
-    }}
-
-    @Override
-    public void restore{self.entity_name}(Long id) {{
-        log.info("Restoring {self.entity_lower} with ID: {{}}", id);
-
-        {self.entity_name} {self.entity_camel} = {self.entity_camel}Repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("{self.entity_name} not found with ID: " + id));
-
-        if ({self.entity_camel}.getDeletedAt() == null) {{
-            throw new IllegalArgumentException("{self.entity_name} is not deleted");
-        }}
-
-        {self.entity_camel}.setDeletedAt(null);
-        {self.entity_camel}Repository.save({self.entity_camel});
-
-        log.info("Restored {self.entity_lower} with ID: {{}}", id);
     }}
 }}
 """
@@ -814,33 +693,25 @@ public interface {self.entity_name}Mapper {{
         template = f"""package {BASE_PACKAGE}.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import {BASE_PACKAGE}.dto.core.SuccessResponse;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}CreateRequest;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}Response;
 import {BASE_PACKAGE}.dto.{self.entity_lower}.{self.entity_name}UpdateRequest;
-import {BASE_PACKAGE}.service.{self.entity_name}Service;
-import {BASE_PACKAGE}.util.FilterRequest;
-import {BASE_PACKAGE}.util.HttpResponseHandler;
-
-import java.util.HashMap;
-import java.util.Map;
+import {BASE_PACKAGE}.dto.search.PaginationRequest;
+import {BASE_PACKAGE}.service.{self.entity_lower}.{self.entity_name}Service;
+import {BASE_PACKAGE}.util.ResponseHandler;
 
 /**
  * REST controller for {self.entity_name} management operations.
  * 
- * Provides RESTful endpoints for complete CRUD operations on {self.entity_lower}s.
- * 
- * Base URL: /api/v2/{self.route_base}
+ * Provides RESTful endpoints for CRUD operations on {self.entity_lower}s.
  */
 @RestController
 @RequestMapping("/{self.route_base}")
@@ -851,30 +722,30 @@ public class {self.entity_name}ApiController {{
     private final {self.entity_name}Service {self.entity_camel}Service;
 
     /**
-     * Retrieves paginated {self.entity_lower}s with advanced filtering and search capabilities.
+     * Searches {self.entity_lower}s with pagination, filtering, and sorting.
      * 
-     * @param filter the filter request containing pagination, sorting, and search criteria
+     * @param request the pagination request containing search, filters, sorts, page, and size
      * @return page of {self.entity_lower} responses with HTTP 200
      */
-    @PostMapping("/list")
-    public ResponseEntity<Object> getPaginated{self.entity_name}s(@Valid @RequestBody FilterRequest filter) {{
-        log.info("REST request to get paginated {self.entity_lower}s - filter: {{}}", filter);
-        Page<{self.entity_name}Response> response = {self.entity_camel}Service.getPaginated{self.entity_name}s(filter);
-        return HttpResponseHandler.success("{self.entity_name}s retrieved successfully", response);
+    @PostMapping("/search")
+    public ResponseEntity<SuccessResponse<Page<{self.entity_name}Response>>> search(@RequestBody PaginationRequest request) {{
+        log.info("REST request to search {self.entity_lower}s - request: {{}}", request);
+        Page<{self.entity_name}Response> response = {self.entity_camel}Service.search(request);
+        return ResponseHandler.success("{self.entity_name}s retrieved successfully", response);
     }}
 
     /**
      * Creates a new {self.entity_lower}.
      * 
      * @param request the {self.entity_lower} creation request
-     * @return created {self.entity_lower} response with HTTP 201
+     * @return created {self.entity_lower} response with HTTP 200
      */
     @PostMapping
-    public ResponseEntity<Object> create{self.entity_name}(@Valid @RequestBody {self.entity_name}CreateRequest request) {{
+    public ResponseEntity<SuccessResponse<{self.entity_name}Response>> create(@Valid @RequestBody {self.entity_name}CreateRequest request) {{
         log.info("REST request to create {self.entity_lower}");
 
-        {self.entity_name}Response response = {self.entity_camel}Service.create{self.entity_name}(request);
-        return HttpResponseHandler.created("{self.entity_name} created successfully", response);
+        {self.entity_name}Response response = {self.entity_camel}Service.create(request);
+        return ResponseHandler.success("{self.entity_name} created successfully", response);
     }}
 
     /**
@@ -884,54 +755,11 @@ public class {self.entity_name}ApiController {{
      * @return {self.entity_lower} response with HTTP 200
      */
     @GetMapping("/{{id}}")
-    public ResponseEntity<Object> get{self.entity_name}ById(@PathVariable Long id) {{
+    public ResponseEntity<SuccessResponse<{self.entity_name}Response>> getById(@PathVariable Long id) {{
         log.debug("REST request to get {self.entity_lower} by ID: {{}}", id);
 
-        {self.entity_name}Response response = {self.entity_camel}Service.get{self.entity_name}ById(id);
-        return HttpResponseHandler.success("{self.entity_name} retrieved successfully", response);
-    }}
-
-    /**
-     * Retrieves all {self.entity_lower}s with pagination and sorting.
-     * 
-     * @param page page number (0-based, default: 0)
-     * @param size page size (default: 20)
-     * @param sort sort criteria (default: id,asc)
-     * @return page of {self.entity_lower} responses with HTTP 200
-     */
-    @GetMapping
-    public ResponseEntity<Object> getAll{self.entity_name}s(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) int size,
-            @RequestParam(defaultValue = "id,asc") String sort) {{
-        log.debug("REST request to get all {self.entity_lower}s - page: {{}}, size: {{}}, sort: {{}}", page, size, sort);
-
-        Pageable pageable = createPageable(page, size, sort);
-        Page<{self.entity_name}Response> response = {self.entity_camel}Service.getAll{self.entity_name}s(pageable);
-        return HttpResponseHandler.success("{self.entity_name}s retrieved successfully", response);
-    }}
-
-    /**
-     * Searches {self.entity_lower}s by term.
-     * 
-     * @param searchTerm the search term
-     * @param page       page number (0-based, default: 0)
-     * @param size       page size (default: 20)
-     * @param sort       sort criteria (default: id,asc)
-     * @return page of matching {self.entity_lower} responses with HTTP 200
-     */
-    @GetMapping("/search")
-    public ResponseEntity<Object> search{self.entity_name}s(
-            @RequestParam String searchTerm,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) int size,
-            @RequestParam(defaultValue = "id,asc") String sort) {{
-        log.debug("REST request to search {self.entity_lower}s with term: '{{}}' - page: {{}}, size: {{}}, sort: {{}}",
-                searchTerm, page, size, sort);
-
-        Pageable pageable = createPageable(page, size, sort);
-        Page<{self.entity_name}Response> response = {self.entity_camel}Service.search{self.entity_name}s(searchTerm, pageable);
-        return HttpResponseHandler.success("{self.entity_name}s search completed successfully", response);
+        {self.entity_name}Response response = {self.entity_camel}Service.getById(id);
+        return ResponseHandler.success("{self.entity_name} retrieved successfully", response);
     }}
 
     /**
@@ -942,63 +770,27 @@ public class {self.entity_name}ApiController {{
      * @return updated {self.entity_lower} response with HTTP 200
      */
     @PutMapping("/{{id}}")
-    public ResponseEntity<Object> update{self.entity_name}(
+    public ResponseEntity<SuccessResponse<{self.entity_name}Response>> update(
             @PathVariable Long id,
             @Valid @RequestBody {self.entity_name}UpdateRequest request) {{
         log.info("REST request to update {self.entity_lower} with ID: {{}}", id);
 
-        {self.entity_name}Response response = {self.entity_camel}Service.update{self.entity_name}(id, request);
-        return HttpResponseHandler.success("{self.entity_name} updated successfully", response);
+        {self.entity_name}Response response = {self.entity_camel}Service.update(id, request);
+        return ResponseHandler.success("{self.entity_name} updated successfully", response);
     }}
 
     /**
      * Soft deletes a {self.entity_lower}.
      * 
      * @param id the {self.entity_lower} ID to delete
-     * @return HTTP 204 No Content
-     */
-    @DeleteMapping("/{{id}}")
-    public ResponseEntity<Object> delete{self.entity_name}(@PathVariable Long id) {{
-        log.info("REST request to delete {self.entity_lower} with ID: {{}}", id);
-
-        {self.entity_camel}Service.delete{self.entity_name}(id);
-        return HttpResponseHandler.noContent("{self.entity_name} deleted successfully");
-    }}
-
-    /**
-     * Restores a soft-deleted {self.entity_lower}.
-     * 
-     * @param id the {self.entity_lower} ID to restore
      * @return HTTP 200 with success message
      */
-    @PostMapping("/{{id}}/restore")
-    public ResponseEntity<Object> restore{self.entity_name}(@PathVariable Long id) {{
-        log.info("REST request to restore {self.entity_lower} with ID: {{}}", id);
+    @DeleteMapping("/{{id}}")
+    public ResponseEntity<SuccessResponse<Object>> delete(@PathVariable Long id) {{
+        log.info("REST request to delete {self.entity_lower} with ID: {{}}", id);
 
-        {self.entity_camel}Service.restore{self.entity_name}(id);
-
-        Map<String, String> response = new HashMap<>();
-        response.put("{self.entity_lower}Id", id.toString());
-
-        return HttpResponseHandler.success("{self.entity_name} restored successfully", response);
-    }}
-
-    /**
-     * Helper method to create Pageable with sorting.
-     * 
-     * @param page page number
-     * @param size page size
-     * @param sort sort criteria
-     * @return Pageable instance
-     */
-    private Pageable createPageable(int page, int size, String sort) {{
-        String[] sortParams = sort.split(",");
-        String property = sortParams[0];
-        Sort.Direction direction = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1])
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-
-        return PageRequest.of(page, size, Sort.by(direction, property));
+        {self.entity_camel}Service.delete(id);
+        return ResponseHandler.success("{self.entity_name} deleted successfully");
     }}
 }}
 """
@@ -1009,10 +801,8 @@ public class {self.entity_name}ApiController {{
         directories = [
             f"{BASE_PATH}/model",
             f"{BASE_PATH}/repository/jpa",
-            f"{BASE_PATH}/repository/jdbc",
             f"{BASE_PATH}/dto/{self.entity_lower}",
-            f"{BASE_PATH}/service",
-            f"{BASE_PATH}/service/impl",
+            f"{BASE_PATH}/service/{self.entity_lower}",
             f"{BASE_PATH}/mapper",
             f"{BASE_PATH}/controller"
         ]
@@ -1027,12 +817,11 @@ public class {self.entity_name}ApiController {{
         components = {
             f"{BASE_PATH}/model/{self.entity_name}.java": self.generate_model(),
             f"{BASE_PATH}/repository/jpa/{self.entity_name}Repository.java": self.generate_repository(),
-            f"{BASE_PATH}/repository/jdbc/{self.entity_name}JdbcRepository.java": self.generate_jdbc_repository(),
             f"{BASE_PATH}/dto/{self.entity_lower}/{self.entity_name}CreateRequest.java": self.generate_create_request(),
             f"{BASE_PATH}/dto/{self.entity_lower}/{self.entity_name}UpdateRequest.java": self.generate_update_request(),
             f"{BASE_PATH}/dto/{self.entity_lower}/{self.entity_name}Response.java": self.generate_response(),
-            f"{BASE_PATH}/service/{self.entity_name}Service.java": self.generate_service_interface(),
-            f"{BASE_PATH}/service/impl/{self.entity_name}ServiceImpl.java": self.generate_service_impl(),
+            f"{BASE_PATH}/service/{self.entity_lower}/{self.entity_name}Service.java": self.generate_service_interface(),
+            f"{BASE_PATH}/service/{self.entity_lower}/{self.entity_name}ServiceImpl.java": self.generate_service_impl(),
             f"{BASE_PATH}/mapper/{self.entity_name}Mapper.java": self.generate_mapper(),
             f"{BASE_PATH}/controller/{self.entity_name}ApiController.java": self.generate_controller(),
         }
