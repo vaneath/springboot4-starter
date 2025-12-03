@@ -157,60 +157,84 @@ done
 # Step 6: Rename package directories (main and test)
 print_info "Renaming package directories..."
 
+# Function to safely move package directory
+move_package_directory() {
+    local OLD_DIR="$1"
+    local NEW_DIR="$2"
+    local TYPE="$3"
+    
+    if [ ! -d "$OLD_DIR" ]; then
+        print_warn "${TYPE} package directory not found: $OLD_DIR"
+        return 0
+    fi
+    
+    # Check if new directory already exists
+    if [ -d "$NEW_DIR" ]; then
+        print_error "Target directory already exists: $NEW_DIR"
+        print_error "Cannot proceed with directory move."
+        exit 1
+    fi
+    
+    # Create parent directories for new path
+    mkdir -p "$(dirname "$NEW_DIR")"
+    
+    # Use cp -r and then rm -rf to avoid mv issues with nested paths
+    # This is safer when old and new paths might share parent directories
+    cp -r "$OLD_DIR" "$NEW_DIR"
+    
+    if [ $? -eq 0 ]; then
+        # Remove old directory recursively
+        rm -rf "$OLD_DIR"
+        print_info "Moved ${TYPE} package directory: $OLD_DIR -> $NEW_DIR"
+        
+        # Clean up empty parent directories (bottom-up)
+        local current_dir=$(dirname "$OLD_DIR")
+        while [ "$current_dir" != "src/main/java" ] && [ "$current_dir" != "src/test/java" ] && [ "$current_dir" != "." ]; do
+            if [ -d "$current_dir" ] && [ -z "$(ls -A "$current_dir" 2>/dev/null)" ]; then
+                rmdir "$current_dir" 2>/dev/null || break
+                current_dir=$(dirname "$current_dir")
+            else
+                break
+            fi
+        done
+    else
+        print_error "Failed to copy ${TYPE} package directory"
+        exit 1
+    fi
+}
+
 # Rename main source directories
 OLD_MAIN_DIR="src/main/java/${OLD_PACKAGE_PATH}"
 NEW_MAIN_DIR="src/main/java/${NEW_PACKAGE_PATH}"
-
-if [ -d "$OLD_MAIN_DIR" ]; then
-    # Create new directory structure
-    mkdir -p "$(dirname "$NEW_MAIN_DIR")"
-    
-    # Move directory
-    mv "$OLD_MAIN_DIR" "$NEW_MAIN_DIR"
-    print_info "Moved main package directory: $OLD_MAIN_DIR -> $NEW_MAIN_DIR"
-    
-    # Clean up empty directories
-    find src/main/java -type d -empty -delete 2>/dev/null || true
-else
-    print_warn "Main package directory not found: $OLD_MAIN_DIR"
-fi
+move_package_directory "$OLD_MAIN_DIR" "$NEW_MAIN_DIR" "main"
 
 # Rename test source directories
 OLD_TEST_DIR="src/test/java/${OLD_PACKAGE_PATH}"
 NEW_TEST_DIR="src/test/java/${NEW_PACKAGE_PATH}"
-
-if [ -d "$OLD_TEST_DIR" ]; then
-    # Create new directory structure
-    mkdir -p "$(dirname "$NEW_TEST_DIR")"
-    
-    # Move directory
-    mv "$OLD_TEST_DIR" "$NEW_TEST_DIR"
-    print_info "Moved test package directory: $OLD_TEST_DIR -> $NEW_TEST_DIR"
-    
-    # Clean up empty directories
-    find src/test/java -type d -empty -delete 2>/dev/null || true
-else
-    print_warn "Test package directory not found: $OLD_TEST_DIR (this is OK if no tests exist)"
-fi
+move_package_directory "$OLD_TEST_DIR" "$NEW_TEST_DIR" "test"
 
 # Step 7: Update all Java files (package declarations and imports)
 print_info "Updating Java files (main and test)..."
-find src -name "*.java" -type f | while read -r file; do
-    # Update package declarations
+# Use find with -print0 and while with -d '' to handle filenames with spaces
+find src -name "*.java" -type f -print0 | while IFS= read -r -d '' file; do
+    # Update package declarations (only at start of line, match complete package)
     sed -i.bak "s|^package ${OLD_PACKAGE}|package ${NEW_PACKAGE}|g" "$file"
     
-    # Update imports
-    sed -i.bak "s|import ${OLD_PACKAGE}|import ${NEW_PACKAGE}|g" "$file"
+    # Update imports (complete import statements)
+    sed -i.bak "s|^import ${OLD_PACKAGE}\\.|import ${NEW_PACKAGE}.|g" "$file"
+    sed -i.bak "s|^import static ${OLD_PACKAGE}\\.|import static ${NEW_PACKAGE}.|g" "$file"
     
     # Update string references in code (for BaseRepository import in generate-crud.py)
-    sed -i.bak "s|${OLD_PACKAGE}|${NEW_PACKAGE}|g" "$file"
+    # Use word boundaries to avoid partial replacements
+    sed -i.bak "s|\\b${OLD_PACKAGE}\\b|${NEW_PACKAGE}|g" "$file"
     
     rm -f "${file}.bak"
 done
 
 # Update application class references separately to avoid over-replacement
 print_info "Updating application class references in Java files..."
-find src -name "*.java" -type f | while read -r file; do
+# Use find with -print0 and while with -d '' to handle filenames with spaces
+find src -name "*.java" -type f -print0 | while IFS= read -r -d '' file; do
     # Update class references (e.g., StarterApplication.class)
     sed -i.bak "s|${OLD_APP_CLASS}\\.class|${NEW_APP_CLASS}.class|g" "$file"
     # Update class name references (but be careful not to replace partial matches)
@@ -221,29 +245,63 @@ done
 
 # Step 8: Rename main application class (and test class if exists)
 print_info "Renaming main application class..."
-OLD_APP_FILE="src/main/java/${NEW_PACKAGE_PATH}/${OLD_APP_CLASS}.java"
+
+# Check both old and new locations for application class (in case directory move already happened)
+OLD_APP_FILE_NEW_LOC="src/main/java/${NEW_PACKAGE_PATH}/${OLD_APP_CLASS}.java"
+OLD_APP_FILE_OLD_LOC="src/main/java/${OLD_PACKAGE_PATH}/${OLD_APP_CLASS}.java"
 NEW_APP_FILE="src/main/java/${NEW_PACKAGE_PATH}/${NEW_APP_CLASS}.java"
 
-if [ -f "$OLD_APP_FILE" ]; then
-    mv "$OLD_APP_FILE" "$NEW_APP_FILE"
+# Determine which location has the file
+if [ -f "$OLD_APP_FILE_NEW_LOC" ]; then
+    OLD_APP_FILE="$OLD_APP_FILE_NEW_LOC"
+elif [ -f "$OLD_APP_FILE_OLD_LOC" ]; then
+    OLD_APP_FILE="$OLD_APP_FILE_OLD_LOC"
+else
+    print_warn "Application class file not found in either location:"
+    print_warn "  - $OLD_APP_FILE_NEW_LOC"
+    print_warn "  - $OLD_APP_FILE_OLD_LOC"
+    OLD_APP_FILE=""
+fi
+
+if [ -n "$OLD_APP_FILE" ] && [ -f "$OLD_APP_FILE" ]; then
+    # Only rename if the file name actually changed
+    if [ "$OLD_APP_FILE" != "$NEW_APP_FILE" ]; then
+        mv "$OLD_APP_FILE" "$NEW_APP_FILE"
+        print_info "Renamed application class file: $(basename "$OLD_APP_FILE") -> $(basename "$NEW_APP_FILE")"
+    fi
     # Update class name inside the file
     sed -i.bak "s|class ${OLD_APP_CLASS}|class ${NEW_APP_CLASS}|g" "$NEW_APP_FILE"
     sed -i.bak "s|${OLD_APP_CLASS}\\.class|${NEW_APP_CLASS}.class|g" "$NEW_APP_FILE"
     rm -f "${NEW_APP_FILE}.bak"
-    print_info "Renamed application class: $OLD_APP_CLASS -> $NEW_APP_CLASS"
+    print_info "Updated application class: $OLD_APP_CLASS -> $NEW_APP_CLASS"
 fi
 
 # Rename test class if it exists
-OLD_TEST_FILE="src/test/java/${NEW_PACKAGE_PATH}/${OLD_APP_CLASS}Tests.java"
+OLD_TEST_FILE_NEW_LOC="src/test/java/${NEW_PACKAGE_PATH}/${OLD_APP_CLASS}Tests.java"
+OLD_TEST_FILE_OLD_LOC="src/test/java/${OLD_PACKAGE_PATH}/${OLD_APP_CLASS}Tests.java"
 NEW_TEST_FILE="src/test/java/${NEW_PACKAGE_PATH}/${NEW_APP_CLASS}Tests.java"
 
-if [ -f "$OLD_TEST_FILE" ]; then
-    mv "$OLD_TEST_FILE" "$NEW_TEST_FILE"
+# Determine which location has the test file
+if [ -f "$OLD_TEST_FILE_NEW_LOC" ]; then
+    OLD_TEST_FILE="$OLD_TEST_FILE_NEW_LOC"
+elif [ -f "$OLD_TEST_FILE_OLD_LOC" ]; then
+    OLD_TEST_FILE="$OLD_TEST_FILE_OLD_LOC"
+else
+    print_warn "Test class file not found (this is OK if no tests exist)"
+    OLD_TEST_FILE=""
+fi
+
+if [ -n "$OLD_TEST_FILE" ] && [ -f "$OLD_TEST_FILE" ]; then
+    # Only rename if the file name actually changed
+    if [ "$OLD_TEST_FILE" != "$NEW_TEST_FILE" ]; then
+        mv "$OLD_TEST_FILE" "$NEW_TEST_FILE"
+        print_info "Renamed test class file: $(basename "$OLD_TEST_FILE") -> $(basename "$NEW_TEST_FILE")"
+    fi
     # Update class name inside the test file
     sed -i.bak "s|class ${OLD_APP_CLASS}Tests|class ${NEW_APP_CLASS}Tests|g" "$NEW_TEST_FILE"
     sed -i.bak "s|${OLD_APP_CLASS}\\.class|${NEW_APP_CLASS}.class|g" "$NEW_TEST_FILE"
     rm -f "${NEW_TEST_FILE}.bak"
-    print_info "Renamed test class: ${OLD_APP_CLASS}Tests -> ${NEW_APP_CLASS}Tests"
+    print_info "Updated test class: ${OLD_APP_CLASS}Tests -> ${NEW_APP_CLASS}Tests"
 fi
 
 # Step 9: Update generate-crud.py
@@ -273,10 +331,16 @@ if [ -f starter.postman_collection.json ]; then
     rm -f "${NEW_POSTMAN_FILE}.bak"
 fi
 
-# Step 12: Update .gitignore if it references application.properties
+# Step 12: Update .gitignore if needed
 print_info "Checking .gitignore..."
-if grep -q "application.properties" .gitignore 2>/dev/null; then
-    print_info ".gitignore already excludes application.properties"
+if [ -f .gitignore ]; then
+    if grep -q "application.properties" .gitignore 2>/dev/null; then
+        print_info ".gitignore already excludes application.properties"
+    else
+        print_warn ".gitignore does not exclude application.properties (consider adding it)"
+    fi
+else
+    print_warn ".gitignore file not found"
 fi
 
 print_info ""
